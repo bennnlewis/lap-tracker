@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2016 by Ben Lewis
+-->
+<html>
+    <head>
+        <title>Lap Tracking App</title>
+        <link rel="stylesheet" href="w3.css">
+        <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css?family=Josefin+Sans" rel="stylesheet">
+        <meta charset="utf-8">
+        <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width"> <!-- ADDED initial scale and not user scalable to try to fix iPhone 5 and Safari resizing issue-->
+        <style id="jsbin-css">
+            body {
+                background-image: url("rink.png");
+                background-repeat: no-repeat;
+                background-size:100% 100%;
+
+                }
+
+            .canvas
+              {
+              display: block;
+              margin: auto;
+              /* border: 3px solid #73AD21; */
+
+              }
+
+            .debug {
+                color: black;
+                width: 450px;
+                margin: auto;
+
+                /* text-shadow: 1px 1px 2px #000000; */
+                }
+
+            div.scoreboard{
+               width: 350px;
+               border: 5px solid #8C44EE;
+               padding: 15px;
+               border-radius: 7px;
+               background-color: #300071;
+               color: white;
+               font-family: 'Josefin Sans', sans-serif;
+              font-size: 24px;
+              margin: auto;
+              height: 250px;
+            }
+
+            div.num{
+              position: relative;
+              font-family: 'Press Start 2P', monospace;
+              font-size: 30px;
+              border: 5px solid #8C44EE;
+              padding: 7px;
+              border-radius: 4px;
+              /* left: 125px; */
+              margin: auto;
+              width: 120px;
+              text-align: center;
+
+            }
+            div.text{
+              position:relative;
+              font-size: 17px;
+              font-family: 'Josefin Sans', sans-serif;
+              /* left: 140px; */
+              text-align: center;
+
+
+            }
+            div.title{
+               width: 350px;
+               border: 5px solid #8C44EE;
+               padding: 15px;
+               border-radius: 7px;
+               background-color: white;
+
+              font-family: 'Josefin Sans', sans-serif;
+              font-size: 27px;
+              margin:auto;
+              color: #8C44EE;
+              /*text-shadow: 3px 2px 2px #300071;*/
+              text-align: center;
+
+            }
+
+            div.timetext{
+              position: relative;
+              font-size: 17px;
+              top: 20px;
+              left: 10px;
+              
+            }
+
+            #timeNum{
+               position: relative;
+              font-family: 'Press Start 2P', monospace;
+              font-size: 16px;
+              border: 5px solid #8C44EE;
+              padding: 5px;
+              border-radius: 4px;
+              width: 100px;
+              left: -6px;
+              text-align: center;
+
+            }
+
+            div.lphtext{
+              position: relative;
+              font-size: 17px;
+              top: -80px;
+              left: 200px;
+            }
+            #lphNum{
+              position: relative;
+              font-family: 'Press Start 2P', monospace;
+              font-size: 16px;
+              border: 5px solid #8C44EE;
+              padding: 5px;
+              border-radius: 4px;
+              width: 85px;
+              left: 25px;
+              text-align: center;
+            }
+
+            /* create a CSS style that makes things disappear - this may fix iPhone Safari issues */
+            .disappear {
+                 display: none;
+            }
+
+
+            .hamburger {
+              position: absolute;
+              top: 2px; 
+              left: 2px;
+              z-index: 1;
+          }
+
+        </style>
+
+
+    </head>
+    <body class="w3-container">
+
+        <!-- Sidebar -->
+        <div class="w3-sidebar w3-bar-block w3-border-right" style="display:none" id="mySidebar">
+          <button onclick="w3_close()" class="w3-bar-item w3-large">Close &times;</button>
+          <a onclick="showDebugging()" href="#" class="w3-bar-item w3-button">Show debugging</a>
+          <a onclick="document.getElementById('helpModal').style.display='block'" href="#" class="w3-bar-item w3-button">Help</a>
+        </div>
+
+
+
+        <span class="hamburger" style="font-size:30px;cursor:pointer;" onclick="w3_open()">&#9776;</span>  
+
+        <div id="helpModal" class="w3-modal">
+          <div class="w3-modal-content">
+            <div class="w3-container">
+              <span onclick="document.getElementById('helpModal').style.display='none'" 
+              class="w3-button w3-display-topright">&times;</span>
+              <ul>
+                <li>Make sure your GPS is enabled and set to "high accuracy"</li>
+            </div>
+          </div>
+        </div>
+
+        <div class="title">Welcome to Lap Tracker!</div> 
+          <div class="scoreboard"> 
+            <div class="text"># OF LAPS:</div>
+            <div class="num" id="num">0</div>
+            <div class="timetext"> TIME 
+              <p id="timeNum">0:00</p>
+                </div>
+            <div class="lphtext"> LAPS/HOUR
+              <p id="lphNum">100</p>
+                </div>
+          </div>
+        
+        <p class="debug" id="kickoff"><b><br></p></b>
+        <div class="debug">
+             <button class="w3-btn w3-green w3-display-middle" id="startGPS">Start!!! Let's Get Going!</button>
+             <button class="w3-btn w3-green" id="startCalBtn">Start the First Lap</button>
+             <button class="w3-btn w3-red" id="stopCalBtn">Done with the First Lap!</button>
+        </div>
+
+        <canvas id="myCanvas" class="canvas" width="400" height="400"> Your browser does not support the HTML5 canvas tag.</canvas>
+
+        <span id="turnOnDebug">
+          <p class="debug"id="cordovaGeolocation"></p>
+          <p class="debug">Array output below...</p>
+          <p class="debug"id="arrayTest"></p>
+          <p class="debug">center and laps is...</p>
+          <p class="debug" id="centerTest"></p>
+          <p class="debug">Laps so far: </p>
+          <p class="debug" id="lapsResult"></p>
+          <p class="debug" id="debugging"></p>
+          <button onclick="hideDebugging()" class="w3-btn w3-blue w3-display-bottommiddle id="hideDebugging">Hide the debugging</button>
+        </span>
+
+
+        
+
+
+
+<script id="javascript">
+
+var currentX = 0;
+var currentY = 0;
+var lastX = 150; //center of canvas 
+var lastY = 150; //center of canvas
+var calibrateInterval = 0; //delare a global variable to stop the periodic array pushing
+var trackingInterval = 0; //delare a global variable for the lap tracking activity
+var showCalibrationStuff;
+var calibrateArrayX = [];
+var calibrateArrayY = [];
+var minX = 0;
+var minY = 0;
+var maxX = 0;
+var maxY = 0;
+//var paddingPct = 1.4;
+var centerX = 0;
+var centerY = 0;
+var currentQuad = "ur";
+var lastQuad = "ur";
+var numLaps = 0;
+var c = document.getElementById("myCanvas");
+var ctx = c.getContext("2d");
+var canvas = document.getElementById("myCanvas");
+var shrunkX = 0;
+var shrunkY = 0;
+var trackingIntervalMillisecs = 500;
+var timeSinceStarting = 0;
+var minutesForDisplay = 1;
+var hoursForDisplay = 0;
+var timeForDisplay = "";
+var lapsPerHour = 0;
+
+var rinkIndex = 0;
+var isKnownRink = false;
+var rinkStatus = "";
+var rink = ["Lasker", "Bryant Park", "Nathan Phillips Square"];
+var rinkLat = [40.79655673, 40.75371919, 43.65225352];
+var rinkLon = [-73.95464663, -73.98357044, -79.38335597];
+var test = 1;
+var d = new Date();
+var todaysDate = d.toDateString();
+var todaysDateCheck = "";
+var todaysSavedLaps = 0;
+
+//hide debugging stuff
+  document.getElementById("turnOnDebug").style.visibility = "hidden";
+
+//hide calibration buttons
+document.getElementById("startCalBtn").setAttribute("class", "disappear");
+document.getElementById("stopCalBtn").setAttribute("class", "disappear");
+
+//Cordova plugin
+
+    document.addEventListener("deviceready", onDeviceReady, false);
+    function onDeviceReady() {
+        console.log("navigator.geolocation works well");
+    }
+
+
+
+ // GPS onSuccess Callback
+    //   This method accepts a `Position` object, which contains
+    //   the current GPS coordinates
+    //
+    function onSuccess(position) {
+        currentX = position.coords.latitude;
+        currentY = position.coords.longitude;
+        
+        document.getElementById("cordovaGeolocation").innerHTML="Latitude: " + position.coords.latitude + "<br>Longitude: " + position.coords.longitude + "<br> Accuracy: " + position.coords.accuracy;
+
+    }
+
+    // onError Callback receives a PositionError object
+    //
+    function onError(error) {
+        alert('code: '    + error.code    + '\n' +
+              'message: ' + error.message + '\n');
+    }
+
+    // Options: throw an error if no update is received every 30 seconds.
+    //
+
+    function turnOnGPS(){
+
+      var watchID = navigator.geolocation.watchPosition(onSuccess, onError, { enableHighAccuracy: true, timeout: 30000 });
+
+      document.getElementById("startGPS").setAttribute("class", "disappear");
+
+      document.getElementById("kickoff").innerHTML="Checking if at a known rink for 10 seconds...";
+
+
+      startCalibrate();
+
+    }
+//start an event listener to check for button clicks
+document.getElementById("startGPS").addEventListener("click", turnOnGPS);
+document.getElementById("startCalBtn").addEventListener("click", startCalibrate);
+document.getElementById("stopCalBtn").addEventListener("click", stopCalibrate);
+
+
+function startCalibrate(position) 
+    {
+        //check for the date and gather saved laps from previous sessions on the same day and if not the same day, then set saved laps to zero
+        localStorage.setItem("todaysDateCloud", todaysDate);
+        todaysDateCheck = localStorage.getItem("todaysDateCloud");
+        //todaysDateCheck = "Sat Mar 27 1999";
+        if (todaysDate == todaysDateCheck)
+          {
+            todaysSavedLaps = Number(localStorage.getItem("savedLaps"));
+            //console.log("it is today " + todaysDateCheck);
+          } else
+          {
+            todaysSavedLaps = 0;
+            localStorage.setItem("savedLaps", todaysSavedLaps);
+            //console.log("zeroed the saved laps: "+ todaysSavedLaps);
+          }
+          
+        //start collecting GPS data
+        if(currentX != 0 )
+          { 
+          calibrateArrayX.push(currentX);
+          }
+        if(currentY != 0 )
+          {
+          calibrateArrayY.push(currentY);
+          }
+        document.getElementById("arrayTest").innerHTML=calibrateArrayX[calibrateArrayX.length-1];
+
+        calibrateInterval = setInterval(function()
+            { 
+                addToCalibrateArray() 
+               
+            }, 1000); //add an array element every 1 seconds
+
+        showCalibrationStuff = setTimeout(function()
+            {
+              if (isKnownRink == false)
+              {
+                document.getElementById("startCalBtn").style.display = "block";
+                document.getElementById("startCalBtn").className = "w3-btn w3-green";
+                document.getElementById("stopCalBtn").style.display = "block";
+                document.getElementById("stopCalBtn").className = "w3-btn w3-red";
+                document.getElementById("kickoff").innerHTML="Use the buttons below to calibrate your first lap";
+                //console.log("showing up once");
+              }
+              
+
+            }, 10000);
+   }
+
+function addToCalibrateArray()
+    {
+        if(currentX != 0 )
+          { 
+          calibrateArrayX.push(currentX);
+          }
+        if(currentY != 0 )
+          {
+          calibrateArrayY.push(currentY);
+          }
+
+      
+        // check if at a known rink
+
+        for (rinkIndex = 0; rinkIndex < rinkLat.length; rinkIndex++) { 
+            if ( Math.abs(currentX - rinkLat[rinkIndex]) < 0.002 )
+            {
+                if ( Math.abs(currentY - rinkLon[rinkIndex]) < 0.002 )
+                {
+                    isKnownRink = true;
+                    rinkStatus = rink[rinkIndex];
+                    centerX = rinkLat[rinkIndex];
+                    centerY = rinkLon[rinkIndex];
+
+                    //set numLaps to zero but grab saved number of laps if there is a record of previously using the app on the same day
+                    if (todaysDate == todaysDateCheck)
+                      {
+                        todaysSavedLaps = Number(localStorage.getItem("savedLaps"));
+                        numLaps = todaysSavedLaps;
+                        //console.log("number of saved laps is: " + numLaps);
+                      } else
+                      {
+                        numLaps = 0;
+                      }
+
+                    minX = centerX - 0.001;
+                    maxX = centerX + 0.001;
+                    minY = centerY - 0.001;
+                    maxY = centerY + 0.001;
+
+                    document.getElementById("startCalBtn").setAttribute("class", "disappear");
+                    document.getElementById("stopCalBtn").setAttribute("class", "disappear");
+                    document.getElementById("startCalBtn").style.display = "none"; //note this may not work on iPhones
+                    document.getElementById("stopCalBtn").style.display = "none";
+
+                    document.getElementById("kickoff").innerHTML="<b>Great, you're at (" + rinkStatus + ") and can start skating!</b>"
+
+                    //console.log("is at a known rink? " + isKnownRink);
+
+                    clearInterval(calibrateInterval); //stop calibrating
+                    //console.log("cleared interval!");
+
+
+                    beginTracking();
+
+
+                }
+            }
+        }
+
+
+        document.getElementById("arrayTest").innerHTML=calibrateArrayX[calibrateArrayX.length-1] + " , " + calibrateArrayY[calibrateArrayY.length-1] + " array length is: " + calibrateArrayX.length + " " + rinkStatus;
+
+    }
+
+function stopCalibrate()
+    {
+        if (isKnownRink == false)
+            {
+            document.getElementById("arrayTest").innerHTML=calibrateArrayX[calibrateArrayX.length-1] + " , " + calibrateArrayY[calibrateArrayY.length-1] + " array length is: " + calibrateArrayX.length + " STOPPED" + " " + rinkStatus;
+            clearInterval(calibrateInterval);
+            //console.log("cleared interval!");
+            minX = Math.min.apply(Math, calibrateArrayX);
+            maxX = Math.max.apply(Math, calibrateArrayX);
+            minY = Math.min.apply(Math, calibrateArrayY);
+            maxY = Math.max.apply(Math, calibrateArrayY);
+            centerX = minX + ((maxX - minX)/2);
+            centerY = minY + ((maxY - minY)/2);
+            document.getElementById("centerTest").innerHTML=centerX + " , " + centerY+"MinX is: " + minX;
+
+            //set numLaps to 1 but grab saved number of laps if there is a record of previously using the app on the same day
+              if (todaysDate == todaysDateCheck)
+                {
+                  todaysSavedLaps = Number(localStorage.getItem("savedLaps"));
+                  numLaps = todaysSavedLaps;
+                } else
+                {
+                  numLaps = 1;
+                }
+
+            /* remove the buttons */
+            document.getElementById("startCalBtn").setAttribute("class", "disappear");
+            document.getElementById("stopCalBtn").setAttribute("class", "disappear");
+            document.getElementById("startCalBtn").style.display = "none"; //note this may not work on iPhones
+            document.getElementById("stopCalBtn").style.display = "none";
+
+            document.getElementById("kickoff").setAttribute("class", "disappear");
+            document.getElementById("kickoff").style.display = "none";
+
+            clearTimeout(showCalibrationStuff);
+
+            beginTracking();
+           }
+    }
+
+function beginTracking()
+    {
+        document.getElementById("lapsResult").innerHTML="tracking...";
+        //drawPath();
+        trackingInterval = setInterval(function()
+            { 
+                checkQuad() 
+                
+            }, trackingIntervalMillisecs); //add an array element every second
+    }
+    
+function checkQuad()
+    {
+    //calculate the time related calculations
+        //first, calculate the time and convert to stop watch format
+        timeSinceStarting += trackingIntervalMillisecs/1000;
+        minutesForDisplay = Math.floor(timeSinceStarting / 60) % 60;
+        if (minutesForDisplay < 10) {
+            minutesForDisplay = "0" + minutesForDisplay;
+            }   // append 0 if less than 10 by checking then turning into a string
+        hoursForDisplay = Math.floor(timeSinceStarting / 3600);
+        
+        //second, calculate laps per hour
+        lapsPerHour = numLaps / (timeSinceStarting / 3600);
+
+        //third, update the scoreboard
+        document.getElementById("timeNum").innerHTML=hoursForDisplay +":" + minutesForDisplay;
+        document.getElementById("lphNum").innerHTML=Math.round(lapsPerHour);
+        
+    //check progress of laps here
+        if (currentX >= centerX && currentY >= centerY) { currentQuad = "ur"; }
+        if (currentX < centerX && currentY >= centerY) { currentQuad = "ul"; }
+        if (currentX < centerX && currentY < centerY) { currentQuad = "ll"; }
+        if (currentX >= centerX && currentY < centerY) { currentQuad = "ur"; }
+        if (currentQuad != lastQuad) 
+        {
+            numLaps = numLaps + 0.25;
+            localStorage.setItem("savedLaps", numLaps);
+            lastQuad = currentQuad;
+        }
+        document.getElementById("lapsResult").innerHTML="Number of laps: " + numLaps;
+        document.getElementById("num").innerHTML=Math.floor(numLaps); //use floor to round down to nearest integer
+    //}
+
+
+
+    var bounds = {
+        "minLon": minX - 0.0003,
+        "maxLon": maxX + 0.0003,
+        "maxLat": maxY + 0.0003,
+        "minLat": minY - 0.0003
+    }
+    var dimensions = {
+        width:400,
+        height:400
+    }
+
+    var shrunkX = dimensions.width* ( (currentX - bounds.minLon) / (bounds.maxLon - bounds.minLon) );
+
+    var shrunkY = dimensions.height* ( (currentY - bounds.minLat) / (bounds.maxLat - bounds.minLat) );
+
+    ctx.beginPath();
+    ctx.strokeStyle="#566573";
+    ctx.moveTo(lastX,lastY);
+    ctx.lineTo(shrunkX,shrunkY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.strokeStyle="#D35400";
+    ctx.arc(dimensions.width/2, dimensions.height/2, 10, 0, 2 * Math.PI);
+    ctx.stroke();
+
+
+    lastX = shrunkX;
+    lastY = shrunkY;
+
+
+    document.getElementById("debugging").innerHTML="Number of laps: " + numLaps + "<br> current quad: " + currentQuad + "<br>shrunk x and y " + shrunkX + " " + shrunkY + "<br> last X and Y: " + lastX + " " + lastY;
+
+    }
+
+    function showDebugging() {
+      document.getElementById("turnOnDebug").style.visibility = "visible";
+      w3_close();
+      }
+
+    function hideDebugging() {
+      document.getElementById("turnOnDebug").style.visibility = "hidden";
+      document.getElementById("startCalBtn").setAttribute("class", "disappear");
+      document.getElementById("stopCalBtn").setAttribute("class", "disappear");
+      document.getElementById("startCalBtn").style.display = "none"; //note this may not work on iPhones
+      document.getElementById("stopCalBtn").style.display = "none";
+      }
+
+    function w3_open() {
+      document.getElementById("mySidebar").style.display = "block";
+    }
+    function w3_close() {
+      document.getElementById("mySidebar").style.display = "none";
+    }
+
+</script>
+</body>
+</html>
